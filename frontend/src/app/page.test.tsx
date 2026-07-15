@@ -18,7 +18,7 @@ describe("Home page", () => {
     await user.type(screen.getByLabelText(/password/i), "password");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
-    expect(screen.getByRole("heading", { name: /kanban studio/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /kanban studio/i })).toBeInTheDocument();
     expect(screen.getAllByTestId(/column-/i)).toHaveLength(5);
   });
 

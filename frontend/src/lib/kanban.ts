@@ -101,39 +101,8 @@ export const moveCard = (
   }
 
   const isOverColumn = isColumnId(columns, overId);
-
-  if (activeColumnId === overColumnId) {
-    if (isOverColumn) {
-      const nextCardIds = activeColumn.cardIds.filter(
-        (cardId) => cardId !== activeId
-      );
-      nextCardIds.push(activeId);
-      return columns.map((column) =>
-        column.id === activeColumnId
-          ? { ...column, cardIds: nextCardIds }
-          : column
-      );
-    }
-
-    const oldIndex = activeColumn.cardIds.indexOf(activeId);
-    const newIndex = activeColumn.cardIds.indexOf(overId);
-
-    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) {
-      return columns;
-    }
-
-    const nextCardIds = [...activeColumn.cardIds];
-    nextCardIds.splice(oldIndex, 1);
-    nextCardIds.splice(newIndex, 0, activeId);
-
-    return columns.map((column) =>
-      column.id === activeColumnId
-        ? { ...column, cardIds: nextCardIds }
-        : column
-    );
-  }
-
   const activeIndex = activeColumn.cardIds.indexOf(activeId);
+
   if (activeIndex === -1) {
     return columns;
   }
@@ -141,7 +110,24 @@ export const moveCard = (
   const nextActiveCardIds = [...activeColumn.cardIds];
   nextActiveCardIds.splice(activeIndex, 1);
 
-  const nextOverCardIds = [...overColumn.cardIds];
+  if (activeColumnId === overColumnId) {
+    const targetIndex = isOverColumn
+      ? nextActiveCardIds.length
+      : overColumn.cardIds.indexOf(overId);
+
+    const nextCardIds = [...overColumn.cardIds.filter((cardId) => cardId !== activeId)];
+    const insertIndex = targetIndex === -1 ? nextCardIds.length : targetIndex;
+    nextCardIds.splice(insertIndex, 0, activeId);
+
+    return columns.map((column) => {
+      if (column.id === activeColumnId) {
+        return { ...column, cardIds: nextCardIds };
+      }
+      return column;
+    });
+  }
+
+  const nextOverCardIds = [...overColumn.cardIds.filter((cardId) => cardId !== activeId)];
   if (isOverColumn) {
     nextOverCardIds.push(activeId);
   } else {
