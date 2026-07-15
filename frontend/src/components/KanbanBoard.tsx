@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -15,9 +15,31 @@ import { KanbanColumn } from "@/components/KanbanColumn";
 import { KanbanCardPreview } from "@/components/KanbanCardPreview";
 import { createId, initialData, moveCard, type BoardData } from "@/lib/kanban";
 
+const BOARD_API_URL = "/api/boards/user";
+
 export const KanbanBoard = () => {
   const [board, setBoard] = useState<BoardData>(() => initialData);
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadBoard = async () => {
+      try {
+        const response = await fetch(BOARD_API_URL);
+        if (!response.ok) {
+          throw new Error("Unable to load board");
+        }
+        const nextBoard = (await response.json()) as BoardData;
+        setBoard(nextBoard);
+      } catch {
+        setBoard(initialData);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void loadBoard();
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -31,7 +53,19 @@ export const KanbanBoard = () => {
     setActiveCardId(event.active.id as string);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const persistBoard = async (nextBoard: BoardData) => {
+    try {
+      await fetch(BOARD_API_URL, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(nextBoard),
+      });
+    } catch {
+      // Ignore persistence errors in this lightweight MVP flow.
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveCardId(null);
 
@@ -39,57 +73,75 @@ export const KanbanBoard = () => {
       return;
     }
 
-    setBoard((prev) => ({
-      ...prev,
-      columns: moveCard(prev.columns, active.id as string, over.id as string),
-    }));
+    const nextBoard = {
+      ...board,
+      columns: moveCard(board.columns, active.id as string, over.id as string),
+    };
+
+    setBoard(nextBoard);
+    await persistBoard(nextBoard);
   };
 
-  const handleRenameColumn = (columnId: string, title: string) => {
-    setBoard((prev) => ({
-      ...prev,
-      columns: prev.columns.map((column) =>
+  const handleRenameColumn = async (columnId: string, title: string) => {
+    const nextBoard = {
+      ...board,
+      columns: board.columns.map((column) =>
         column.id === columnId ? { ...column, title } : column
       ),
-    }));
+    };
+
+    setBoard(nextBoard);
+    await persistBoard(nextBoard);
   };
 
-  const handleAddCard = (columnId: string, title: string, details: string) => {
+  const handleAddCard = async (columnId: string, title: string, details: string) => {
     const id = createId("card");
-    setBoard((prev) => ({
-      ...prev,
+    const nextBoard = {
+      ...board,
       cards: {
-        ...prev.cards,
+        ...board.cards,
         [id]: { id, title, details: details || "No details yet." },
       },
-      columns: prev.columns.map((column) =>
+      columns: board.columns.map((column) =>
         column.id === columnId
           ? { ...column, cardIds: [...column.cardIds, id] }
           : column
       ),
-    }));
+    };
+
+    setBoard(nextBoard);
+    await persistBoard(nextBoard);
   };
 
-  const handleDeleteCard = (columnId: string, cardId: string) => {
-    setBoard((prev) => {
-      return {
-        ...prev,
-        cards: Object.fromEntries(
-          Object.entries(prev.cards).filter(([id]) => id !== cardId)
-        ),
-        columns: prev.columns.map((column) =>
-          column.id === columnId
-            ? {
-                ...column,
-                cardIds: column.cardIds.filter((id) => id !== cardId),
-              }
-            : column
-        ),
-      };
-    });
+  const handleDeleteCard = async (columnId: string, cardId: string) => {
+    const nextBoard = {
+      ...board,
+      cards: Object.fromEntries(
+        Object.entries(board.cards).filter(([id]) => id !== cardId)
+      ),
+      columns: board.columns.map((column) =>
+        column.id === columnId
+          ? {
+              ...column,
+              cardIds: column.cardIds.filter((id) => id !== cardId),
+            }
+          : column
+      ),
+    };
+
+    setBoard(nextBoard);
+    await persistBoard(nextBoard);
   };
 
   const activeCard = activeCardId ? cardsById[activeCardId] : null;
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm font-semibold uppercase tracking-[0.3em] text-[var(--gray-text)]">
+        Loading board...
+      </div>
+    );
+  }
 
   return (
     <div className="relative overflow-hidden">
