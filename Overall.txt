@@ -1,0 +1,721 @@
+Project Overview (Beginner Friendly)
+===================================
+
+This document explains your project in plain language.
+It is written for a beginner and covers:
+- What each major technology does (npm, Next.js, FastAPI, OpenRouter, Docker)
+- How your project is structured
+- What each file/folder is for
+- How start/stop scripts work line-by-line
+- How Git was used and how to view older versions safely
+
+
+1) What This Project Is
+=======================
+
+You are building a Project Management MVP app with:
+- A login page
+- A Kanban board
+- Drag-and-drop cards
+- AI assistant in a sidebar
+- Backend persistence (SQLite)
+
+Your app has two main parts:
+- Frontend (UI in browser): Next.js + React + TypeScript
+- Backend (API and database logic): FastAPI + Python + SQLite
+
+
+2) Beginner Definitions
+=======================
+
+2.1 npm
+-------
+npm is the JavaScript package manager.
+It installs frontend libraries and runs frontend scripts.
+
+Examples in this project:
+- npm install
+- npm run dev
+- npm test
+
+2.2 Next.js
+-----------
+Next.js is a React framework used to build your web UI.
+It handles pages, builds, dev server, and bundling.
+
+2.3 FastAPI
+-----------
+FastAPI is a Python web framework for backend APIs.
+It serves endpoints like /api/boards/user and /api/ai/action.
+
+2.4 OpenRouter
+--------------
+OpenRouter is the external AI provider.
+Your backend calls it when OPENROUTER_API_KEY is available.
+If the provider fails, local fallback logic still handles simple actions.
+
+2.5 Docker
+----------
+Docker packages apps into containers for consistent environments.
+In your current workflow, you are not required to use Docker.
+You are running frontend/backend directly on Windows.
+
+
+3) Current Runtime Flow
+=======================
+
+Current local ports used by your scripts:
+- Frontend: http://127.0.0.1:3001
+- Backend: http://127.0.0.1:8011
+
+Request flow:
+1. Browser loads frontend (Next.js) on 3001
+2. Frontend sends API requests to backend on 8011
+3. Backend reads/writes SQLite DB
+4. AI requests:
+   - First attempt: OpenRouter
+   - On failure: local fallback parser
+
+
+4) How OpenRouter Is Used Here
+==============================
+
+In backend/app/main.py:
+- OPENROUTER_API_KEY is read from environment
+- Backend sends model requests to:
+  https://openrouter.ai/api/v1/chat/completions
+- Model configured: openai/gpt-oss-120b
+
+Behavior:
+- If OpenRouter returns structured JSON updates, backend applies updates to board
+- If OpenRouter returns plain text, backend returns that text to UI
+- If OpenRouter fails, backend uses local fallback to attempt actions
+
+Why you saw fallback before:
+- Missing key, unreachable provider, or non-structured action response for certain prompts
+
+
+5) Where Docker Fits In This Project
+====================================
+
+You have Docker files:
+- Dockerfile
+- docker-compose.yml
+
+Current Docker setup status:
+- Dockerfile currently builds only backend container and exposes port 8000
+- docker-compose currently starts one service named app on port 8000
+- Frontend container is not currently defined in compose
+
+So today:
+- Docker can run backend
+- Your current easy full-stack workflow uses PowerShell scripts (start.ps1/stop.ps1)
+
+How Docker could be extended:
+1. Add frontend service container
+2. Map frontend to 3001 and backend to 8011 or 8000
+3. Add volume for SQLite file persistence
+4. Add env file wiring for OPENROUTER_API_KEY
+
+
+6) File-by-File Project Guide
+=============================
+
+6.1 Root files
+--------------
+- .env
+  Stores environment variables (for example OPENROUTER_API_KEY).
+
+- .gitignore
+  Tells Git which files/folders to ignore (for example scripts/.runtime).
+
+- AGENTS.md
+  Project instructions and constraints for coding assistant behavior.
+
+- Dockerfile
+  Backend container build instructions.
+
+- docker-compose.yml
+  Container orchestration file (currently single backend service).
+
+- Overall.txt
+  This summary document.
+
+
+6.2 docs/
+---------
+- docs/PLAN.md
+  Main project execution plan.
+
+- docs/PLAN_UPDATED.md
+  Updated plan notes.
+
+
+6.3 backend/
+------------
+- backend/AGENTS.md
+  Backend-specific assistant guidance.
+
+- backend/requirements.txt
+  Python dependencies for backend.
+
+- backend/app/main.py
+  Main FastAPI app:
+  - health endpoints
+  - board persistence endpoints
+  - AI endpoints
+  - OpenRouter integration
+  - local fallback logic
+
+- backend/app/project_management.db
+  SQLite database file storing board data.
+
+- backend/tests/test_board_api.py
+  Tests board CRUD and persistence endpoints.
+
+- backend/tests/test_ai_api.py
+  Tests AI health/basic API behavior.
+
+- backend/tests/test_ai_actions.py
+  Tests AI action behavior and update application logic.
+
+
+6.4 frontend/
+-------------
+- frontend/.gitignore
+  Frontend-specific ignore rules.
+
+- frontend/AGENTS.md
+  Frontend-specific assistant guidance.
+
+- frontend/package.json
+  Frontend scripts and dependencies.
+
+- frontend/package-lock.json
+  Exact npm dependency lock file.
+
+- frontend/next.config.ts
+  Next.js configuration.
+
+- frontend/tsconfig.json
+  TypeScript compiler configuration.
+
+- frontend/eslint.config.mjs
+  Linting configuration.
+
+- frontend/postcss.config.mjs
+  PostCSS/Tailwind pipeline config.
+
+- frontend/playwright.config.ts
+  E2E testing configuration.
+
+- frontend/vitest.config.ts
+  Unit testing configuration.
+
+- frontend/README.md
+  Frontend readme notes.
+
+- frontend/next-env.d.ts
+  Next.js TypeScript type helper file.
+
+- frontend/public/
+  Static assets for frontend.
+
+- frontend/src/app/layout.tsx
+  Root layout wrapper for app pages.
+
+- frontend/src/app/globals.css
+  Global CSS styles.
+
+- frontend/src/app/page.tsx
+  Main page with login and board entry point.
+
+- frontend/src/app/page.test.tsx
+  Tests login/sign-out/change-password behavior.
+
+- frontend/src/app/favicon.ico
+  Browser favicon.
+
+- frontend/src/components/AiAssistantPanel.tsx
+  AI chat sidebar UI and request handling.
+
+- frontend/src/components/KanbanBoard.tsx
+  Board container; loads/saves board; drag-and-drop wiring.
+
+- frontend/src/components/KanbanBoard.test.tsx
+  Board component unit tests.
+
+- frontend/src/components/KanbanCard.tsx
+  Single card component.
+
+- frontend/src/components/KanbanCardPreview.tsx
+  Drag overlay preview component.
+
+- frontend/src/components/KanbanColumn.tsx
+  Column component and drop area.
+
+- frontend/src/components/NewCardForm.tsx
+  Add-card form UI.
+
+- frontend/src/lib/kanban.ts
+  Board data models and movement utilities.
+
+- frontend/src/lib/kanban.test.ts
+  Utility tests for move behavior.
+
+- frontend/src/test/setup.ts
+  Vitest/testing-library setup.
+
+- frontend/src/test/vitest.d.ts
+  Test typing declarations.
+
+- frontend/tests/kanban.spec.ts
+  Playwright end-to-end test.
+
+- frontend/test-results/
+  Generated E2E test outputs (runtime artifacts).
+
+- frontend/.next/
+  Next.js build cache/output (generated).
+
+- frontend/node_modules/
+  Installed npm packages (generated).
+
+- frontend/out/
+  Static export output if build/export used.
+
+
+6.5 scripts/
+------------
+- scripts/AGENTS.md
+  Scripts folder guidance.
+
+- scripts/start.ps1
+  Windows starter script for backend + frontend + browser open.
+
+- scripts/stop.ps1
+  Windows stop script for backend + frontend + managed browser close.
+
+- scripts/start.sh
+  Shell starter script (Linux/Mac path).
+
+- scripts/stop.sh
+  Shell stop script (Linux/Mac path).
+
+- scripts/.runtime/
+  Generated runtime folder:
+  - PID files
+  - logs
+  - dedicated browser profile
+
+
+7) start.ps1 Script (Shown + Line-by-Line Explanation)
+======================================================
+
+Current script:
+
+param(
+  [int]$BackendPort = 8011,
+  [int]$FrontendPort = 3001,
+  [string]$OpenUrl = ""
+)
+
+$ErrorActionPreference = "Stop"
+
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$rootDir = (Resolve-Path (Join-Path $scriptDir "..")).Path
+$frontendDir = Join-Path $rootDir "frontend"
+$runtimeDir = Join-Path $scriptDir ".runtime"
+
+New-Item -ItemType Directory -Path $runtimeDir -Force | Out-Null
+
+$runId = Get-Date -Format "yyyyMMdd-HHmmss"
+
+$backendPidFile = Join-Path $runtimeDir "backend.pid"
+$frontendPidFile = Join-Path $runtimeDir "frontend.pid"
+$browserPidFile = Join-Path $runtimeDir "browser.pid"
+$backendLogOut = Join-Path $runtimeDir "backend.$runId.out.log"
+$backendLogErr = Join-Path $runtimeDir "backend.$runId.err.log"
+$frontendLogOut = Join-Path $runtimeDir "frontend.$runId.out.log"
+$frontendLogErr = Join-Path $runtimeDir "frontend.$runId.err.log"
+$browserProfileDir = Join-Path $runtimeDir "browser-profile"
+
+function Remove-IfRunning {
+  param([string]$PidFile)
+
+  if (-not (Test-Path $PidFile)) {
+    return
+  }
+
+  $pidText = Get-Content $PidFile -ErrorAction SilentlyContinue
+  [int]$pidValue = 0
+  if ([int]::TryParse(($pidText | Select-Object -First 1), [ref]$pidValue)) {
+    $proc = Get-Process -Id $pidValue -ErrorAction SilentlyContinue
+    if ($proc) {
+      Stop-Process -Id $pidValue -Force -ErrorAction SilentlyContinue
+    }
+  }
+
+  Remove-Item $PidFile -Force -ErrorAction SilentlyContinue
+}
+
+function Wait-ForHttp {
+  param(
+    [string]$Url,
+    [int]$MaxAttempts = 60,
+    [int]$DelayMs = 500
+  )
+
+  for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+    try {
+      $response = Invoke-WebRequest -Uri $Url -TimeoutSec 3 -UseBasicParsing
+      if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 500) {
+        return $true
+      }
+    }
+    catch {
+      Start-Sleep -Milliseconds $DelayMs
+    }
+  }
+
+  return $false
+}
+
+function Wait-ForBackendHealth {
+  param(
+    [string]$Url,
+    [int]$MaxAttempts = 60,
+    [int]$DelayMs = 500
+  )
+
+  for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+    try {
+      $payload = Invoke-RestMethod -Uri $Url -TimeoutSec 3
+      if ($payload.status -eq "ok" -and $payload.service -eq "project-management-mvp") {
+        return $true
+      }
+    }
+    catch {
+      Start-Sleep -Milliseconds $DelayMs
+    }
+  }
+
+  return $false
+}
+
+$openTarget = $OpenUrl
+if ([string]::IsNullOrWhiteSpace($openTarget)) {
+  $openTarget = "http://127.0.0.1:$FrontendPort"
+}
+
+# Prevent duplicate stacks from previous runs.
+Remove-IfRunning -PidFile $backendPidFile
+Remove-IfRunning -PidFile $frontendPidFile
+Remove-IfRunning -PidFile $browserPidFile
+
+New-Item -ItemType File -Path $backendLogOut -Force | Out-Null
+New-Item -ItemType File -Path $backendLogErr -Force | Out-Null
+New-Item -ItemType File -Path $frontendLogOut -Force | Out-Null
+New-Item -ItemType File -Path $frontendLogErr -Force | Out-Null
+
+$backendStartArgs = @{
+  FilePath = "python"
+  ArgumentList = @("-m", "uvicorn", "backend.app.main:app", "--reload", "--host", "127.0.0.1", "--port", "$BackendPort")
+  WorkingDirectory = $rootDir
+  RedirectStandardOutput = $backendLogOut
+  RedirectStandardError = $backendLogErr
+  PassThru = $true
+}
+$backendProc = Start-Process @backendStartArgs
+
+$backendProc.Id | Set-Content $backendPidFile
+
+if (-not (Wait-ForBackendHealth -Url "http://127.0.0.1:$BackendPort/api/health")) {
+  throw "Backend failed health check on port $BackendPort. See $backendLogOut and $backendLogErr"
+}
+
+$frontendStartArgs = @{
+  FilePath = "npm.cmd"
+  ArgumentList = @("run", "dev", "--", "--hostname", "127.0.0.1", "--port", "$FrontendPort")
+  WorkingDirectory = $frontendDir
+  RedirectStandardOutput = $frontendLogOut
+  RedirectStandardError = $frontendLogErr
+  PassThru = $true
+}
+$frontendProc = Start-Process @frontendStartArgs
+
+$frontendProc.Id | Set-Content $frontendPidFile
+
+if (-not (Wait-ForHttp -Url "http://127.0.0.1:$FrontendPort")) {
+  throw "Frontend failed readiness check on port $FrontendPort. See $frontendLogOut and $frontendLogErr"
+}
+
+$browserExe = $null
+$chromeCandidates = @(
+  "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
+  "$env:ProgramFiles(x86)\Google\Chrome\Application\chrome.exe"
+)
+$edgeCandidates = @(
+  "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe",
+  "$env:ProgramFiles(x86)\Microsoft\Edge\Application\msedge.exe"
+)
+
+foreach ($candidate in ($chromeCandidates + $edgeCandidates)) {
+  if (Test-Path $candidate) {
+    $browserExe = $candidate
+    break
+  }
+}
+
+if ($browserExe) {
+  New-Item -ItemType Directory -Path $browserProfileDir -Force | Out-Null
+  $browserStartArgs = @{
+    FilePath = $browserExe
+    ArgumentList = @("--new-window", "--user-data-dir=$browserProfileDir", $openTarget)
+    PassThru = $true
+  }
+  $browserProc = Start-Process @browserStartArgs
+
+  $browserProc.Id | Set-Content $browserPidFile
+}
+else {
+  Start-Process $openTarget | Out-Null
+}
+
+Write-Output "Backend running at http://127.0.0.1:$BackendPort"
+Write-Output "Frontend running at http://127.0.0.1:$FrontendPort"
+Write-Output "Opened browser to $openTarget"
+Write-Output "Logs: $backendLogOut, $backendLogErr, $frontendLogOut, $frontendLogErr"
+
+Line-by-line explanation (plain English):
+- param(...): lets you override ports and URL when calling the script.
+- ErrorActionPreference=Stop: fail fast on script errors.
+- scriptDir/rootDir/frontendDir/runtimeDir: compute important paths.
+- New-Item runtimeDir: ensures .runtime folder exists.
+- runId: timestamp for unique log file names.
+- pid/log/profile path variables: where process ids and logs are stored.
+- Remove-IfRunning(): stops old process from previous pid file.
+- Wait-ForHttp(): polling helper to wait until a URL responds.
+- Wait-ForBackendHealth(): waits specifically for your backend service signature.
+- openTarget logic: default opens frontend unless OpenUrl passed.
+- Remove-IfRunning calls: avoids duplicate servers/browser from prior run.
+- New-Item log files: pre-creates logs for redirection.
+- backendStartArgs + Start-Process: launches uvicorn backend.
+- Set backend pid file: stores backend process id for stop script.
+- backend health check: confirms right backend is alive.
+- frontendStartArgs + Start-Process: launches Next.js dev server.
+- Set frontend pid file: stores frontend process id.
+- frontend readiness check: confirms UI server is reachable.
+- browser detection logic: prefers Chrome/Edge if installed.
+- browser launch with user-data-dir: isolated profile so stop script can target it.
+- Set browser pid file: tracked process id for stop script.
+- Write-Output lines: friendly startup summary.
+
+
+8) stop.ps1 Script (Shown + Line-by-Line Explanation)
+=====================================================
+
+Current script:
+
+param(
+  [int]$BackendPort = 8011,
+  [int]$FrontendPort = 3001
+)
+
+$ErrorActionPreference = "SilentlyContinue"
+
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$runtimeDir = Join-Path $scriptDir ".runtime"
+$browserProfileDir = Join-Path $runtimeDir "browser-profile"
+
+$backendPidFile = Join-Path $runtimeDir "backend.pid"
+$frontendPidFile = Join-Path $runtimeDir "frontend.pid"
+$browserPidFile = Join-Path $runtimeDir "browser.pid"
+
+function Stop-FromPidFile {
+  param([string]$PidFile)
+
+  if (-not (Test-Path $PidFile)) {
+    return
+  }
+
+  $pidText = Get-Content $PidFile -ErrorAction SilentlyContinue
+  [int]$pidValue = 0
+  if ([int]::TryParse(($pidText | Select-Object -First 1), [ref]$pidValue)) {
+    $proc = Get-Process -Id $pidValue -ErrorAction SilentlyContinue
+    if ($proc) {
+      taskkill /PID $pidValue /T /F | Out-Null
+      Stop-Process -Id $pidValue -Force -ErrorAction SilentlyContinue
+      Write-Output "Stopped PID $pidValue"
+    }
+  }
+
+  Remove-Item $PidFile -Force -ErrorAction SilentlyContinue
+}
+
+function Stop-ListeningPort {
+  param([int]$Port)
+
+  $connections = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
+  if (-not $connections) {
+    return
+  }
+
+  $pids = $connections | Select-Object -ExpandProperty OwningProcess -Unique
+  foreach ($pidValue in $pids) {
+    Stop-Process -Id $pidValue -Force -ErrorAction SilentlyContinue
+    Write-Output "Stopped process on port $Port (PID $pidValue)"
+  }
+}
+
+function Stop-ManagedBrowserWindows {
+  param([string]$ProfileDir)
+
+  if (-not (Test-Path $ProfileDir)) {
+    return
+  }
+
+  $escapedProfilePath = [regex]::Escape($ProfileDir)
+  $browserProcesses = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
+    Where-Object {
+      ($_.Name -ieq "chrome.exe" -or $_.Name -ieq "msedge.exe") -and
+      $_.CommandLine -and
+      $_.CommandLine -match $escapedProfilePath
+    }
+
+  foreach ($browserProcess in $browserProcesses) {
+    taskkill /PID $browserProcess.ProcessId /T /F | Out-Null
+    Stop-Process -Id $browserProcess.ProcessId -Force -ErrorAction SilentlyContinue
+    Write-Output "Stopped managed browser PID $($browserProcess.ProcessId)"
+  }
+}
+
+Stop-FromPidFile -PidFile $browserPidFile
+Stop-ManagedBrowserWindows -ProfileDir $browserProfileDir
+Stop-FromPidFile -PidFile $frontendPidFile
+Stop-FromPidFile -PidFile $backendPidFile
+
+Stop-ListeningPort -Port $FrontendPort
+Stop-ListeningPort -Port $BackendPort
+
+Write-Output "Stopped frontend/backend and closed tracked browser process."
+
+Line-by-line explanation (plain English):
+- param(...): allows optional custom ports.
+- ErrorActionPreference=SilentlyContinue: do best-effort shutdown even if one kill fails.
+- Path setup lines: find runtime folder and pid/profile files.
+- Stop-FromPidFile(): stops process by saved pid, then removes pid file.
+- taskkill /T /F: kills process tree strongly on Windows.
+- Stop-ListeningPort(): safety cleanup by port in case pid files are stale.
+- Stop-ManagedBrowserWindows(): closes Chrome/Edge processes using the managed profile path.
+- Stop calls: close browser, then frontend/backend.
+- Port cleanup calls: ensure no leftover listeners.
+- Final Write-Output: summary message.
+
+
+9) Git Section (How You Used It and Time Travel)
+================================================
+
+9.1 What Git did for your project
+---------------------------------
+You used Git to:
+- stage changes: git add .
+- create snapshots: git commit -m "..."
+- upload snapshots to GitHub: git push
+
+Important: pushing does NOT overwrite history.
+Every commit remains accessible unless force-rewritten.
+
+9.2 Common commands you already used
+------------------------------------
+- git add .
+- git commit -m "Final added shortcuts to start and stop project"
+- git push
+
+9.3 View history
+----------------
+- git log --oneline --decorate --graph --all
+
+9.4 Inspect an old version without switching
+--------------------------------------------
+- git show <commit-hash>
+- git show <commit-hash>:path/to/file
+
+9.5 Switch to an old commit temporarily
+---------------------------------------
+- git checkout <commit-hash>
+
+Return to latest main branch:
+- git checkout main
+
+9.6 Compare versions
+--------------------
+- git diff <old-commit> <new-commit>
+
+9.7 Restore one file from older commit
+--------------------------------------
+- git checkout <commit-hash> -- path/to/file
+
+9.8 Safer beginner workflow to test old code
+--------------------------------------------
+Option A (temporary):
+1. git checkout <old-hash>
+2. inspect/run
+3. git checkout main
+
+Option B (recommended): create a branch from old commit:
+1. git checkout -b explore-old <old-hash>
+2. inspect/run safely
+3. git checkout main
+
+9.9 Why you saw LF/CRLF warnings
+--------------------------------
+Windows uses CRLF by default; some files had LF.
+You fixed noisy warnings by ignoring runtime-generated files and removing them from Git index.
+
+
+10) Practical Day-1 Workflow (Beginner Checklist)
+==================================================
+
+1. Start app stack
+- powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start.ps1
+
+2. Open app/login
+- Browser opens frontend (usually 3001)
+- Demo login: user / current demo password
+
+3. Make code change
+- frontend/src for UI
+- backend/app/main.py for API/AI behavior
+
+4. Run tests
+- Frontend: cd frontend; npm test
+- Backend: cd ..; python -m pytest backend/tests -q
+
+5. Stop app stack
+- powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\stop.ps1
+
+6. Save to Git
+- git add .
+- git commit -m "Describe your change"
+- git push
+
+
+11) Notes and Recommendations
+=============================
+
+- Runtime/generated folders that should not be committed:
+  - scripts/.runtime/
+  - frontend/node_modules/
+  - frontend/.next/
+  - frontend/test-results/
+
+- For cleaner backend commits, consider ignoring local DB if desired:
+  - backend/app/project_management.db
+  (Only ignore if you do not want local runtime data tracked.)
+
+- Docker support exists but is currently backend-focused.
+  You can continue local scripts now, then containerize full stack later.
+
+
+End of document.
