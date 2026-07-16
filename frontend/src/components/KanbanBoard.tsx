@@ -16,7 +16,7 @@ import { KanbanColumn } from "@/components/KanbanColumn";
 import { KanbanCardPreview } from "@/components/KanbanCardPreview";
 import { createId, initialData, moveCard, type BoardData } from "@/lib/kanban";
 
-const BOARD_API_URL = "/api/boards/user";
+const BOARD_API_URL = "http://127.0.0.1:8011/api/boards/user";
 
 export const KanbanBoard = () => {
   const [board, setBoard] = useState<BoardData>(() => initialData);
